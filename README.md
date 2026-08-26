@@ -2,7 +2,7 @@
 
 Staring at a blank caption box every week is a productivity killer. This workflow watches an Instagram account in your niche, filters for what's actually relevant, and hands you a fresh, rewritten draft in your own angle — sitting in a spreadsheet, ready to post or polish.
 
-![Workflow canvas](assets/workflow-canvas.png)
+![Workflow canvas](workflow-canvas.png)
 
 ## Who is this for?
 
