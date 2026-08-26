@@ -1,0 +1,536 @@
+{
+  "name": "Instagram Parasyte System",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c98a2e9a-f037-4e0e-b608-6de745536ed7",
+      "name": "When clicking \u2018Execute workflow\u2019"
+    },
+    {
+      "parameters": {
+        "actorId": {
+          "__rl": true,
+          "value": "nH2AHrwxeTRJoN5hX",
+          "mode": "list",
+          "cachedResultName": "Instagram Post Scraper (apify/instagram-post-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/nH2AHrwxeTRJoN5hX/input"
+        },
+        "customBody": "{\n    \"dataDetailLevel\": \"basicData\",\n    \"onlyPostsNewerThan\": \"7 days\"\n,\n    \"resultsLimit\": 20,\n    \"skipPinnedPosts\": false,\n    \"username\": [\n        \"https://www.instagram.com/TARGET_ACCOUNT_USERNAME/?hl=en\"\n    ]\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e1c48515-5de6-4257-a994-e28eadda5999",
+      "name": "Run an Actor",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}",
+        "limit": null,
+        "options": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "1215c6a3-94f2-4659-8f54-39883cf2151f",
+      "name": "Get dataset items",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a helpful, precise Instagram post classifier for an AI-focused audience (people who build with or want to learn AI, understand cool news that come out of it that actually strike have an interesting take)."
+            },
+            {
+              "content": "Classify a Instagram post for an automation-focused audience. Return only\n{\"verdict\":\"relevant or not_relevant\"}.\n\n- Relevant if it some interesting news on AI that came out\n\n- Not relevant if it's motivational/personal, non-automation coding,\ncrypto/politics/finance, or tool discounts etc... or vague hype with no build/impact.\n\nOutput valid JSON only.\n{\"verdict\":\"relevant or not_relevant\"}"
+            },
+            {
+              "content": "=Here is the instagram post to analyse: {{ $('Edit Fields').item.json.caption }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        320
+      ],
+      "id": "f0d08a8d-f145-49c8-b917-2b9518edeb30",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 2,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -64,
+        320
+      ],
+      "id": "3007e343-e122-4a5c-990e-54012eb0ad58",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9de73809-ce8d-464b-88aa-10a3ffe1370e",
+              "name": "commentsCount",
+              "value": "={{ $json.commentsCount }}",
+              "type": "number"
+            },
+            {
+              "id": "b8dcebcf-c1b1-4c1d-a059-5cb82788026d",
+              "name": "likesCount",
+              "value": "={{ $json.likesCount }}",
+              "type": "number"
+            },
+            {
+              "id": "aeb0625a-0a2c-49bb-82a0-324d24142ef1",
+              "name": "caption",
+              "value": "={{ $json.caption }}",
+              "type": "string"
+            },
+            {
+              "id": "e6a55e5c-93c9-4bb3-a0b8-b04ed4f9adb0",
+              "name": "timestamp",
+              "value": "={{ $json.timestamp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "80658058-425b-474c-a6e5-d6175bfcfbc0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "16cbb70b-3afb-40f4-8f9c-26c989c51f82",
+              "leftValue": "={{ JSON.parse($json.content.parts[0].text).verdict }}",
+              "rightValue": "relevant",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        320
+      ],
+      "id": "92f2aef4-b6c4-4401-be37-7b53f2a8ae28",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-lite-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-flash-lite-latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "#Overview\nYou're a helpful, intelligent writing assistant.\n\n##Task\nRewrite the Instagram post that I'm going to give you in a way that encapsulates the original theme but uses different words.\n\nI am targeting an audience that are people who build with or want to learn AI. They are always fascinated by new discoveries or news that actually make an impact.\n\n## My Results\n\nOver the last year I [YOUR KEY RESULTS / ACHIEVEMENTS HERE \u2014 e.g. revenue generated, clients served, people taught, etc.]\n\n#Rules\n\n* Use a no fluff, young tone when re-writing the Instagram post\n* ONLY output the Instagram post and that's it\n"
+            },
+            {
+              "content": "=Here's the IG post to rewrite: {{ $('Edit Fields').item.json.caption }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        320
+      ],
+      "id": "ba3e289a-cb1a-4ad6-89c8-5902bd87a758",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Your Sheet Name",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Username": "={{ $('Get dataset items').item.json.ownerFullName }}",
+            "PostURL": "={{ $('Get dataset items').item.json.url }}",
+            "Original Post Text": "={{ $('Edit Fields').item.json.caption }}",
+            "Re-written Post Text": "={{ $json.content.parts[0].text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Username",
+              "displayName": "Username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PostURL",
+              "displayName": "PostURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Original Post Text",
+              "displayName": "Original Post Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Re-written Post Text",
+              "displayName": "Re-written Post Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1376,
+        320
+      ],
+      "id": "3ab2acca-0b60-43f5-b710-56ad1dc83f4e",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OAuth Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        320
+      ],
+      "id": "4d0c897c-deaf-4e64-81b3-1d2d2833849f",
+      "name": "Wait",
+      "webhookId": "ab7cef60-1fd7-4dbb-9053-cb6524f545d8"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        320
+      ],
+      "id": "c24a0834-12c7-4be4-b852-90b95b513138",
+      "name": "Wait1",
+      "webhookId": "2317d8e6-b0db-4e49-8f1c-641721e1411d"
+    },
+    {
+      "parameters": {
+        "content": "Relevant IG based on word\nWe scrape top 100 IG that have to do with the word",
+        "height": 256,
+        "width": 608,
+        "color": "#C72929"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "522185fb-06a4-4292-bde2-011f57a8456d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Weekly Trigger\nAutomation runs every week",
+        "height": 256,
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "0ce9ae29-6424-4451-8f7f-bab1460c1668",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Relevant or not\nCheck if they are relevant with what we do",
+        "height": 272,
+        "width": 944,
+        "color": "#A733D1"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "e29a5e38-32a8-4adb-ae88-e2dede07a175",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "ReWrite Post and add to DB\nRewrite every relevant IG we received and add it to our Google Sheets database",
+        "height": 272,
+        "width": 788,
+        "color": "#DBB21F"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        784,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "24a2de8c-1464-4164-8b80-547e7dd1afa0",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking \u2018Execute workflow\u2019": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor": {
+      "main": [
+        [
+          {
+            "node": "Get dataset items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get dataset items": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        []
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "dcc2409c-2a9e-44ba-85df-28f194e4fe0c",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "nodeGroups": [],
+  "id": "M6yH55fpa2eh9PYM",
+  "tags": []
+}
