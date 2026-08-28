@@ -44,6 +44,4 @@ This workflow automates the idea-finding step entirely. It watches for what's tr
 * **Notifications:** Add a Slack or email ping when a new draft is ready, instead of checking the sheet manually.
 * **Cadence:** Run it daily instead of weekly if your niche moves fast enough to warrant it.
 
----
 
-*This is the GitHub-safe version — no live credentials, target accounts, sheet IDs, or personal details included. Replace all placeholders with your own values before running it.*
